@@ -14,7 +14,7 @@ User Input ➜ Preprocess ➜ Apply KNN ➜ Find Nearest Matches ➜ Generate To
 - https://www.kaggle.com/datasets/durgeshrao9993/laptop-specification-dataset?resource=download
 
 # 🖼️ UI Design :
-![Laptop UI Screenshot](./assets/ui_screenshot.png)
+![Laptop UI Screenshot](/static/ss2.png)
 <p align="center">
-  <img src="./static/ss1.png" width="500"/>
+  <img src="/static/ss1.png" width="500"/>
 </p>
