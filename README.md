@@ -19,7 +19,7 @@ User Input ➜ Preprocess ➜ Apply KNN ➜ Find Nearest Matches ➜ Generate To
 # 🖼️ UI Design :
 <p align="center">
   <img src="/static/ss1.png" height=auto width=100%/>
-  <img src="/static/ss2.png" height=auto width=100%/>
+  <img src="/static/ss3.png" height=auto width=100%/>
 </p>
 
 ---
