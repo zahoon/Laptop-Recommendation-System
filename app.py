@@ -62,28 +62,29 @@ def match_preferences(row, preference):
     return False
 
 # === Routes ===
-@app.route('/laptops')
-def laptops():
-    page = int(request.args.get('page', 1))
-    per_page = 20  # Number of laptops per page
-    df = pd.read_csv('laptop_dataset.csv', encoding='latin1')
-    total = len(df)
-    pages = math.ceil(total / per_page)
-    start = (page - 1) * per_page
-    end = start + per_page
-    laptops = df.iloc[start:end]
-    return render_template('laptop.html', laptops=laptops, page=page, pages=pages)
-@app.route('/evaluation')
-def evaluation_page():
-    evaluation = session.get('evaluation', None)
-    return render_template('evaluation.html', evaluation=evaluation)
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
+@app.route('/laptops')
+def laptops():
+    page = int(request.args.get('page', 1))
+    per_page = 20
+    total = len(df)
+    pages = math.ceil(total / per_page)
+    start = (page - 1) * per_page
+    end = start + per_page
+    laptops_page = df.iloc[start:end]
+    return render_template('laptop.html', laptops=laptops_page, page=page, pages=pages)
+
+@app.route('/evaluation')
+def evaluation_page():
+    evaluation = session.get('evaluation', None)
+    return render_template('evaluation.html', evaluation=evaluation)
+
 @app.route('/recommend', methods=['POST'])
 def recommend():
-    # User input
     ram = int(request.form.get('ram'))
     price = float(request.form.get('price'))
     storage_size = float(request.form.get('storage'))
@@ -94,7 +95,7 @@ def recommend():
     if df_pref.empty:
         return render_template('index.html', message="No laptops match your preference.")
 
-    # Prepare KNN
+    # KNN preparation
     features = ['RAM', 'Storage_Size_GB', 'Price (RM)']
     df_pref.dropna(subset=features, inplace=True)
 
@@ -116,22 +117,35 @@ def recommend():
         (df['Storage_Size_GB'] >= storage_size) &
         (df.apply(lambda x: match_preferences(x, preference), axis=1))
     ]
+
     relevant_total = len(ground_truth)
     recommended_relevant = len(recommendations)
 
-    precision = recommended_relevant / 10
+    precision = recommended_relevant / 10 if 10 else 0
     recall = recommended_relevant / relevant_total if relevant_total else 0
 
+    # === Calculate F1 Score ===
+    if precision + recall > 0:
+        f1_score = 2 * (precision * recall) / (precision + recall)
+    else:
+        f1_score = 0
+
+    # Convert to percentages
+    precision *= 100
+    recall *= 100
+    f1_score *= 100
+
     evaluation = (
-        "=== Performance Evaluation ===<br>"
+        "=== 📊 Performance Evaluation ===<br>"
         f"Total Relevant Laptops (Ground Truth): {relevant_total}<br>"
         f"Recommended Relevant (Top 10): {recommended_relevant}<br>"
-        f"Precision: {precision:.2f}<br>"
-        f"Recall: {recall:.2f}"
+        f"Precision: {precision:.2f}%<br>"
+        f"Recall: {recall:.2f}%<br>"
+        f"F1 Score: {f1_score:.2f}%"
     )
     session['evaluation'] = evaluation
 
-    # Output tables split into 2 tabs
+    # Display recommendations in two tables
     table1 = recommendations.iloc[:5][[
         'Company', 'Product', 'Display_Size', 'Screen_Resolution',
         'CPU', 'RAM', 'Storage', 'GPU', 'OS', 'Weight', 'Price (RM)'

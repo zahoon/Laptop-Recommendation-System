@@ -5,7 +5,7 @@ from sklearn.neighbors import NearestNeighbors
 import re
 
 # === Load dataset ===
-file_path = 'laptop_dataset.csv'
+file_path = 'laptop_dataset.csv'  # <-- Make sure this file exists
 df = pd.read_csv(file_path, encoding='latin1')
 
 # === Clean & Convert ===
@@ -42,7 +42,7 @@ def extract_storage_size(storage_str):
 
 df['Storage_Size_GB'] = df['Storage'].apply(extract_storage_size)
 
-# === Preference Matching Function (used for ground truth) ===
+# === Preference Matching Function ===
 def match_preferences(row, preference):
     cpu = row['CPU'].lower()
     gpu = row['GPU'].lower()
@@ -59,8 +59,7 @@ def match_preferences(row, preference):
         return ('i7' in cpu or 'ryzen 7' in cpu) and 'ssd' in storage
     elif preference == 'office':
         return ram >= 4
-    else:
-        return False
+    return False
 
 # === User Input ===
 user_ram = 8
@@ -68,7 +67,7 @@ user_price_rm = 4000
 user_storage_size = 512
 user_preference = 'gaming'
 
-# === Filter based on preference only ===
+# === Filter based on preference ===
 df_pref = df[df.apply(lambda x: match_preferences(x, user_preference), axis=1)].copy()
 
 # === Prepare features and scale ===
@@ -94,12 +93,11 @@ recommendations = df_pref.iloc[indices[0]].copy()
 recommendations.reset_index(drop=True, inplace=True)
 
 # === Display Results ===
-print("\n=== Top 10 Recommended Laptops (KNN-based on RAM, Storage, Price) ===")
+print("\n=== 🧠 Top 10 Recommended Laptops (KNN-based on RAM, Storage, Price) ===")
 print(recommendations[['Company', 'Product', 'Display_Size', 'Screen_Resolution',
                        'CPU', 'RAM', 'Storage', 'GPU', 'OS', 'Weight', 'Price (RM)']])
 
-# === EVALUATION: Precision & Recall ===
-# Ground truth: all laptops matching all filters
+# === Evaluation: Precision, Recall, F1 Score ===
 ground_truth = df[
     (df['RAM'] >= user_ram) &
     (df['Price (RM)'] <= user_price_rm + 1000) &
@@ -107,17 +105,27 @@ ground_truth = df[
     (df.apply(lambda x: match_preferences(x, user_preference), axis=1))
 ]
 
-# Precision = relevant recommended / total recommended
-# Recall = relevant recommended / all relevant
-
 relevant_total = len(ground_truth)
 recommended_relevant = len(recommendations)
 
-precision = recommended_relevant / 10  # since top 10 are returned
+precision = recommended_relevant / 10  # Always return top 10
 recall = recommended_relevant / relevant_total if relevant_total else 0
 
-print("\n=== Performance Evaluation ===")
-print(f"Total Relevant Laptops (Ground Truth): {relevant_total}")
-print(f"Recommended Relevant (Top 10): {recommended_relevant}")
-print(f"Precision: {precision:.2f}")
-print(f"Recall: {recall:.2f}")
+# === Calculate F1 Score ===
+if precision + recall > 0:
+    f1_score = 2 * (precision * recall) / (precision + recall)
+else:
+    f1_score = 0
+
+# === Convert to Percentages ===
+precision_percent = precision * 100
+recall_percent = recall * 100
+f1_percent = f1_score * 100
+
+# === Print Evaluation Results ===
+print("\n=== 📊 Performance Evaluation ===")
+print(f"- Total Relevant Laptops (Ground Truth): {relevant_total}")
+print(f"- Recommended Relevant (Top 10): {recommended_relevant}")
+print(f"- Precision: {precision_percent:.2f}%")
+print(f"- Recall: {recall_percent:.2f}%")
+print(f"- F1 Score: {f1_percent:.2f}%")
